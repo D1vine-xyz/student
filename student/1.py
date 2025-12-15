@@ -229,3 +229,225 @@ JOIN PhieuXuat px ON ct.MaPX = px.MaPX
 WHERE YEAR(px.NgayLap) = 2010
 GROUP BY sp.TenSP
 ORDER BY TongSoLuong DESC;
+
+/*
+------------------------------------------------------------
+--                  TẠO CÁC FUNCTION
+------------------------------------------------------------
+*/
+
+-- 1. Function F1: Tổng số lượng xuất kho của tên sản phẩm trong năm
+CREATE FUNCTION F1 (@TenSP NVARCHAR(100), @Nam INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @TongSoLuong INT;
+
+    SELECT @TongSoLuong = SUM(ct.SoLuong)
+    FROM SanPham sp
+    JOIN CTPX ct ON sp.MaSP = ct.MaSP
+    JOIN PhieuXuat px ON ct.MaPX = px.MaPX
+    WHERE sp.TenSP = @TenSP
+      AND YEAR(px.NgayLap) = @Nam;
+
+    IF @TongSoLuong IS NULL
+        SET @TongSoLuong = 0;
+
+    RETURN @TongSoLuong;
+END
+GO
+
+-- 2. Function F2: Tổng số lượng phiếu xuất của nhân viên
+CREATE FUNCTION F2 (@MaNV CHAR(5))
+RETURNS INT
+AS
+BEGIN
+    DECLARE @SoLuongPhieu INT;
+
+    IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE MaNV = @MaNV)
+        SET @SoLuongPhieu = 0;
+    ELSE
+        SELECT @SoLuongPhieu = COUNT(MaPX)
+        FROM PhieuXuat
+        WHERE MaNV = @MaNV;
+
+    RETURN @SoLuongPhieu;
+END
+GO
+
+-- 3. Function F3: Danh sách các sản phẩm được xuất trong năm
+CREATE FUNCTION F3 (@Nam INT)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT DISTINCT
+        sp.MaSP,
+        sp.TenSP,
+        l.TenLoai
+    FROM SanPham sp
+    JOIN CTPX ct ON sp.MaSP = ct.MaSP
+    JOIN PhieuXuat px ON ct.MaPX = px.MaPX
+    JOIN Loai l ON sp.MaLoai = l.MaLoai
+    WHERE YEAR(px.NgayLap) = @Nam
+);
+GO
+
+-- 4. Function F4: Danh sách các phiếu xuất của nhân viên
+CREATE FUNCTION F4 (@MaNV CHAR(5))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+        MaPX,
+        NgayLap,
+        MaNV
+    FROM PhieuXuat
+    WHERE MaNV = @MaNV OR @MaNV IS NULL OR @MaNV = ''
+);
+GO
+
+-- 5. Function F5: Chi tiết xuất của một phiếu xuất
+CREATE FUNCTION F5 (@MaPX CHAR(6))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+        ct.MaSP,
+        sp.TenSP,
+        ct.SoLuong
+    FROM CTPX ct
+    JOIN SanPham sp ON ct.MaSP = sp.MaSP
+    WHERE ct.MaPX = @MaPX
+);
+GO
+
+-- 6. Function F6: Danh sách các phiếu xuất từ ngày T1 đến T2
+CREATE FUNCTION F6 (@T1 DATE, @T2 DATE)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+        MaPX,
+        NgayLap,
+        MaNV
+    FROM PhieuXuat
+    WHERE NgayLap BETWEEN @T1 AND @T2
+);
+GO
+
+-- 7. Function F7: Chi tiết phiếu xuất với một mã phiếu xuất (Giống F5)
+CREATE FUNCTION F7 (@MaPX CHAR(6))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+        ct.MaSP,
+        sp.TenSP,
+        ct.SoLuong
+    FROM CTPX ct
+    JOIN SanPham sp ON ct.MaSP = sp.MaSP
+    WHERE ct.MaPX = @MaPX
+);
+GO
+
+
+/*
+------------------------------------------------------------
+--                  TẠO CÁC PROCEDURE
+------------------------------------------------------------
+*/
+
+-- 1. Procedure P1: Tổng số lượng xuất kho của sản phẩm trong năm 2010 (Sử dụng Function F1)
+CREATE PROCEDURE P1
+    @TenSP NVARCHAR(100),
+    @TongSoLuong INT OUTPUT
+AS
+BEGIN
+    SELECT @TongSoLuong = dbo.F1(@TenSP, 2010);
+END
+GO
+
+-- 2. Procedure P2: Tổng số lượng xuất kho của sản phẩm từ 4/2010 đến 6/2010
+CREATE PROCEDURE P2
+    @TenSP NVARCHAR(100),
+    @TongSoLuong INT OUTPUT
+AS
+BEGIN
+    SELECT @TongSoLuong = SUM(ct.SoLuong)
+    FROM SanPham sp
+    JOIN CTPX ct ON sp.MaSP = ct.MaSP
+    JOIN PhieuXuat px ON ct.MaPX = px.MaPX
+    WHERE sp.TenSP = @TenSP
+      AND px.NgayLap BETWEEN '2010-04-01' AND '2010-06-30';
+
+    IF @TongSoLuong IS NULL
+    BEGIN
+        SET @TongSoLuong = 0;
+    END
+END
+GO
+
+-- 3. Procedure P3: Số lượng xuất kho của sản phẩm từ 4/2010 đến 6/2010 (GỌI Procedure P2)
+CREATE PROCEDURE P3
+    @TenSP NVARCHAR(100)
+AS
+BEGIN
+    DECLARE @SoLuongXuat INT;
+
+    EXEC P2 @TenSP = @TenSP, @TongSoLuong = @SoLuongXuat OUTPUT;
+
+    SELECT
+        @TenSP AS TenSanPham,
+        N'4/2010 đến 6/2010' AS KhoangThoiGian,
+        @SoLuongXuat AS TongSoLuongXuat;
+END
+GO
+
+-- 4. Procedure P4: INSERT record vào bảng Loai
+CREATE PROCEDURE P4
+    @MaLoai CHAR(5),
+    @TenLoai NVARCHAR(50)
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM Loai WHERE MaLoai = @MaLoai)
+    BEGIN
+        RAISERROR(N'Mã loại đã tồn tại. Không thể thêm.', 16, 1);
+        RETURN;
+    END
+
+    INSERT INTO Loai (MaLoai, TenLoai)
+    VALUES (@MaLoai, @TenLoai);
+
+    SELECT N'Thêm loại sản phẩm thành công!' AS ThongBao;
+END
+GO
+
+-- 5. Procedure P5: DELETE record từ bảng NhanVien
+CREATE PROCEDURE P5
+    @MaNV CHAR(5)
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM PhieuXuat WHERE MaNV = @MaNV)
+    BEGIN
+        RAISERROR(N'Không thể xóa nhân viên này vì có phiếu xuất liên quan.', 16, 1);
+        RETURN;
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE MaNV = @MaNV)
+    BEGIN
+        RAISERROR(N'Mã nhân viên không tồn tại.', 16, 1);
+        RETURN;
+    END
+
+    DELETE FROM NhanVien
+    WHERE MaNV = @MaNV;
+
+    SELECT N'Xóa nhân viên thành công!' AS ThongBao;
+END
+GO
+
