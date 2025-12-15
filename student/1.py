@@ -449,5 +449,85 @@ BEGIN
 
     SELECT N'Xóa nhân viên thành công!' AS ThongBao;
 END
+GO------------------------------------------------------------
+-- 1. Trigger T1: Giới hạn số phiếu xuất (Tối đa 5 phiếu/ngày/NV)
+------------------------------------------------------------
+CREATE TRIGGER T1_KiemTraSoPhieuXuat
+ON PhieuXuat
+FOR INSERT
+AS
+BEGIN
+    DECLARE @MaNV CHAR(5);
+    DECLARE @NgayLap DATE;
+    DECLARE @SoPhieuDaLap INT;
+    
+    -- Lấy thông tin từ phiếu vừa được INSERT
+    SELECT @MaNV = MaNV, @NgayLap = NgayLap FROM inserted;
+
+    -- Đếm số lượng phiếu xuất đã lập của nhân viên đó trong cùng ngày (bao gồm cả phiếu vừa INSERT)
+    SELECT @SoPhieuDaLap = COUNT(MaPX)
+    FROM PhieuXuat
+    WHERE MaNV = @MaNV 
+      AND NgayLap = @NgayLap;
+
+    -- Nếu số lượng lớn hơn 5, HỦY thao tác INSERT
+    IF @SoPhieuDaLap > 5
+    BEGIN
+        RAISERROR(N'Lỗi: Mỗi nhân viên chỉ được lập tối đa 5 phiếu xuất trong một ngày.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END
 GO
+
+ ------------------------------------------------------------
+-- 2. Trigger T2: Giới hạn số chi tiết phiếu xuất (Tối đa 10 chi tiết/phiếu)
+------------------------------------------------------------
+CREATE TRIGGER T2_KiemTraSoCTPX
+ON CTPX
+FOR INSERT
+AS
+BEGIN
+    DECLARE @MaPX CHAR(6);
+    DECLARE @SoChiTiet INT;
+
+    -- Lấy MaPX của chi tiết vừa được INSERT
+    SELECT @MaPX = MaPX FROM inserted;
+
+    -- Đếm số chi tiết hiện có của phiếu đó (bao gồm cả chi tiết vừa INSERT)
+    SELECT @SoChiTiet = COUNT(MaSP)
+    FROM CTPX
+    WHERE MaPX = @MaPX;
+
+    -- Nếu số lượng lớn hơn 10, HỦY thao tác INSERT
+    IF @SoChiTiet > 10
+    BEGIN
+        RAISERROR(N'Lỗi: Mỗi phiếu xuất chỉ được có tối đa 10 chi tiết (dòng sản phẩm) khác nhau.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END
+GO------------------------------------------------------------
+-- 3. Trigger T3: Kiểm tra Mã PX có tồn tại trong CTPX
+------------------------------------------------------------
+CREATE TRIGGER T3_KiemTraMaPX_CTPX
+ON CTPX
+FOR INSERT
+AS
+BEGIN
+    -- Kiểm tra xem có bất kỳ MaPX nào trong bảng 'inserted' (dữ liệu mới) 
+    -- mà KHÔNG tồn tại trong bảng 'PhieuXuat'
+    IF EXISTS (
+        SELECT i.MaPX
+        FROM inserted i
+        LEFT JOIN PhieuXuat px ON i.MaPX = px.MaPX
+        WHERE px.MaPX IS NULL
+    )
+    BEGIN
+        RAISERROR(N'Lỗi: Mã phiếu xuất trong chi tiết phiếu xuất không tồn tại trong bảng PhieuXuat.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END
+GO
+
+
+
 
