@@ -1,533 +1,153 @@
-use master
-go
-IF DB_ID('QLSanXuat') IS NOT NULL
-BEGIN
-    ALTER DATABASE QLSanXuat SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE QLSanXuat;
-END
+CREATE DATABASE QLRAPCHIEUPHIM
 GO
-
-CREATE DATABASE QLSanXuat;
+USE QLRAPCHIEUPHIM
 GO
+CREATE TABLE THELOAI(
+	MATL VARCHAR(5) PRIMARY KEY,
+	TENTL NVARCHAR(50)
+);
 
-USE QLSanXuat;
+CREATE TABLE PHIM(
+	MAPHIM VARCHAR(5) PRIMARY KEY,
+	TENPHIM NVARCHAR(100), 
+	SOLANCHIEU INT,
+	MATL VARCHAR(5),
+	FOREIGN KEY (MATL) REFERENCES THELOAI(MATL)
+);
+
+CREATE TABLE RAP(
+	MARAP VARCHAR(5) PRIMARY KEY,
+	TENRAP NVARCHAR(100),
+	DIACHI NVARCHAR(100)
+);
+
+CREATE  TABLE LICHCHIEU (
+	MAXC VARCHAR(5) PRIMARY KEY,
+	MARAP VARCHAR(5),
+	MAPHIM VARCHAR(5),
+	NGAYCHIEU DATE,
+	SOLUONGVE INT CHECK (SOLUONGVE >0),
+	GIAVE INT,
+	CONSTRAINT FK_LC_RAP FOREIGN KEY (MARAP) REFERENCES RAP(MARAP),
+	CONSTRAINT FK_LC_PHIM FOREIGN KEY (MAPHIM) REFERENCES PHIM(MAPHIM)
+);
+
+INSERT INTO THELOAI VALUES
+ ('TL1', N'Hành Động'),
+ ('TL2', N'Chiến Tranh'),
+ ('TL3', N'Tình cảm - Hài');
+ GO
+
+ INSERT INTO PHIM VALUES
+ ('P01', N'Mai',NULL,'TL3'),
+ ('P02', N'Lật Mặt 7',NULL,'TL1'),
+ ('P03', N'Giải Phóng Sài Gòn',NULL,'TL2'),
+ ('P04', N'Thiên Mệnh Anh Hùng',NULL,'TL1'),
+ ('P05', N'Biệt Đọng Sài Gon',NULL,'TL2');
+ GO
+
+INSERT INTO RAP VALUES
+('R01', N'MEGA GS','Lý Chính Thắng'),
+('R02', N'CGV Cinema','Điện Biên Phủ'),
+('R03', N'Galaxy','NGuyễn Du'),
+('R04', N'Lotte','Nam Sài Gòn');
 GO
--- Bảng Loại sản phẩm
-CREATE TABLE Loai (
-    MaLoai CHAR(5) NOT NULL PRIMARY KEY,
-    TenLoai NVARCHAR(50) NOT NULL
-);
-
--- Bảng Sản phẩm
-CREATE TABLE SanPham (
-    MaSP CHAR(5) NOT NULL PRIMARY KEY,
-    TenSP NVARCHAR(100) NOT NULL,
-    MaLoai CHAR(5) NOT NULL,
-    FOREIGN KEY (MaLoai) REFERENCES Loai(MaLoai)
-);
-
--- Bảng Nhân viên
-CREATE TABLE NhanVien (
-    MaNV CHAR(5) NOT NULL PRIMARY KEY,
-    HoTen NVARCHAR(100) NOT NULL,
-    NgaySinh DATE,
-    Phai BIT,                -- 1: Nam | 0: Nữ
-);
-
--- Bảng Phiếu xuất
-CREATE TABLE PhieuXuat (
-    MaPX CHAR(6) NOT NULL PRIMARY KEY,
-    NgayLap DATE NOT NULL,
-    MaNV CHAR(5) NOT NULL,
-    FOREIGN KEY (MaNV) REFERENCES NhanVien(MaNV)
-);
-
--- Bảng chi tiết phiếu xuất (Bảng liên kết nhiều-nhiều)
-CREATE TABLE CTPX (
-    MaPX CHAR(6) NOT NULL,
-    MaSP CHAR(5) NOT NULL,
-    SoLuong INT NOT NULL CHECK (SoLuong > 0),
-
-    PRIMARY KEY (MaPX, MaSP),
-    FOREIGN KEY (MaPX) REFERENCES PhieuXuat(MaPX),
-    FOREIGN KEY (MaSP) REFERENCES SanPham(MaSP)
-);
-
-
-INSERT INTO Loai (MaLoai, TenLoai)
-VALUES
-('1', N'Vật liệu xây dựng'),
-('2', N'Hàng tiêu dùng'),
-('3', N'Ngũ cốc');
-
-
-INSERT INTO SanPham (MaSP, TenSP, MaLoai) VALUES
-(1, 'Xi măng', 1),
-(2, 'Gạch', 1),
-(3, 'gạo nàng hương', 3),
-(4, 'Bột mì', 3),
-(5, 'Kệ chén', 2),
-(6, 'Đậu xanh', 3);
-
-INSERT INTO NhanVien (MaNV, HoTen, NgaySinh, Phai)
-VALUES
-('NV01', N'Nguyễn Mai Thi', '1982-05-15', 0),
-('NV02', N'Trần Đình Chiến', '1980-12-02', 1),
-('NV03', N'Lê Thị Chi', '1979-01-23', 0);
-('NV04', N'Huỳnh Nguyễn Trung Hiếu', '1998-06-09', 1);
-
-INSERT INTO PhieuXuat (MaPX, NgayLap, MaNV)
-VALUES
-('1', '2010-03-12', 'NV01'),
-('2', '2010-02-03', 'NV02'),
-('3', '2010-06-01', 'NV03'),
-('4', '2010-06-16', 'NV01');
-
-
-INSERT INTO CTPX (MaPX, MaSP, SoLuong)
-VALUES
-('1', '1', 10),
-('1', '2', 15),
-('1', '3', 5),
-('2', '2', 20),
-('3', '1', 20),
-('3', '3', 25),
-('4', '5', 12);
-
-SELECT * FROM Loai
-SELECT * FROM SanPham
-SELECT * FROM NhanVien
-SELECT * FROM PhieuXuat
-SELECT * FROM CTPX
-
-
-
---
---    BÀI TẬP   --
---
-------------------------------------------------------------
--- 1. View: Tổng số lượng xuất của từng sản phẩm trong 2010
-------------------------------------------------------------
+INSERT INTO LICHCHIEU VALUES 
+('XC01','R02','P01','2023/02/14','300','160000'),
+('XC02','R03','P01','2024/04/01','220','120000'),
+('XC03','R04','P02', '2024/03/08','350','170000'),
+('XC04','R03','P02', '2024/04/30','200','180000'),
+('XC05','R01','P03', '2023/04/29','160','140000'),
+('XC06','R03','P03', '2023/05/19','100','110000'),
+('XC07','R01','P05', '2024/04/30','90','120000');
+---cÂU 1:
 CREATE VIEW V1 AS
-SELECT 
-    sp.MaSP,
-    sp.TenSP,
-    SUM(ct.SoLuong) AS TongSoLuong
-FROM CTPX ct
-JOIN PhieuXuat px ON ct.MaPX = px.MaPX
-JOIN SanPham sp ON ct.MaSP = sp.MaSP
-WHERE YEAR(px.NgayLap) = 2010
-GROUP BY sp.MaSP, sp.TenSP;
+SELECT
+	PHIM.MAPHIM,
+	PHIM.TENPHIM,
+	COUNT(LICHCHIEU.MAXC) AS SOLANCHIEU
+FROM PHIM
+LEFT JOIN LICHCHIEU ON PHIM.MAPHIM = LICHCHIEU.MAPHIM
+GROUP BY PHIM.MAPHIM, PHIM.TENPHIM;
 
--- Lấy dữ liệu sắp xếp theo tên sản phẩm
 SELECT * FROM V1
-ORDER BY TenSP ASC;
-
-
-------------------------------------------------------------
--- 2. View: sản phẩm bán từ 1/1/2010 đến 30/6/2010
-------------------------------------------------------------
-CREATE VIEW V2 AS
-SELECT DISTINCT
-    sp.MaSP,
-    sp.TenSP,
-    l.TenLoai
-FROM CTPX ct
-JOIN PhieuXuat px ON ct.MaPX = px.MaPX
-JOIN SanPham sp ON ct.MaSP = sp.MaSP
-JOIN Loai l ON sp.MaLoai = l.MaLoai
-WHERE px.NgayLap BETWEEN '2010-01-01' AND '2010-06-30';
-SELECT * FROM V2
-
-
-------------------------------------------------------------
--- 3. View: Số lượng sản phẩm theo từng loại
-------------------------------------------------------------
-CREATE VIEW V3 AS
-SELECT 
-    l.MaLoai,
-    l.TenLoai,
-    COUNT(sp.MaSP) AS SoLuongSanPham
-FROM Loai l
-LEFT JOIN SanPham sp ON l.MaLoai = sp.MaLoai
-GROUP BY l.MaLoai, l.TenLoai;
-SELECT * FROM V3
-
-
-------------------------------------------------------------
--- 4. Tổng số phiếu xuất trong tháng 6/2010
-------------------------------------------------------------
-SELECT COUNT(*) AS TongPX_T6_2010
-FROM PhieuXuat
-WHERE YEAR(NgayLap) = 2010 AND MONTH(NgayLap) = 6;
-
-
-------------------------------------------------------------
--- 5. Thông tin phiếu xuất của nhân viên NV01
-------------------------------------------------------------
-SELECT *
-FROM PhieuXuat
-WHERE MaNV = 'NV01';
-
-
-------------------------------------------------------------
--- 6. Nhân viên nam tuổi > 25 và < 30 (tính theo năm 2010)
-------------------------------------------------------------
-SELECT 
-    MaNV, HoTen, NgaySinh
-FROM NhanVien
-WHERE Phai = 1
-  AND (2010 - YEAR(NgaySinh)) > 25
-  AND (2010 - YEAR(NgaySinh)) < 30;
-
-
-------------------------------------------------------------
--- 7. Thống kê số lượng phiếu xuất theo nhân viên
-------------------------------------------------------------
-SELECT 
-    nv.MaNV,
-    nv.HoTen,
-    COUNT(px.MaPX) AS SoLuongPhieu
-FROM NhanVien nv
-LEFT JOIN PhieuXuat px ON nv.MaNV = px.MaNV
-GROUP BY nv.MaNV, nv.HoTen;
-
-
-------------------------------------------------------------
--- 8. Thống kê số lượng sản phẩm đã xuất theo từng sản phẩm
-------------------------------------------------------------
-SELECT 
-    sp.MaSP,
-    sp.TenSP,
-    SUM(ct.SoLuong) AS TongSoLuong
-FROM SanPham sp
-JOIN CTPX ct ON sp.MaSP = ct.MaSP
-GROUP BY sp.MaSP, sp.TenSP;
-
-
-------------------------------------------------------------
--- 9. Nhân viên có số lượng phiếu xuất nhiều nhất
-------------------------------------------------------------
-SELECT TOP 1 
-    nv.HoTen,
-    COUNT(px.MaPX) AS SoLuongPhieu
-FROM NhanVien nv
-JOIN PhieuXuat px ON nv.MaNV = px.MaNV
-GROUP BY nv.HoTen
-ORDER BY SoLuongPhieu DESC;
-
-
-------------------------------------------------------------
--- 10. Tên sản phẩm được xuất nhiều nhất năm 2010
-------------------------------------------------------------
-SELECT TOP 1
-    sp.TenSP,
-    SUM(ct.SoLuong) AS TongSoLuong
-FROM SanPham sp
-JOIN CTPX ct ON sp.MaSP = ct.MaSP
-JOIN PhieuXuat px ON ct.MaPX = px.MaPX
-WHERE YEAR(px.NgayLap) = 2010
-GROUP BY sp.TenSP
-ORDER BY TongSoLuong DESC;
-
-/*
-------------------------------------------------------------
---                  TẠO CÁC FUNCTION
-------------------------------------------------------------
-*/
-
--- 1. Function F1: Tổng số lượng xuất kho của tên sản phẩm trong năm
-CREATE FUNCTION F1 (@TenSP NVARCHAR(100), @Nam INT)
-RETURNS INT
+---cÂU 2:
+CREATE FUNCTION F1(@MAPHIM CHAR(5))
+RETURNS BIGINT
 AS
 BEGIN
-    DECLARE @TongSoLuong INT;
-
-    SELECT @TongSoLuong = SUM(ct.SoLuong)
-    FROM SanPham sp
-    JOIN CTPX ct ON sp.MaSP = ct.MaSP
-    JOIN PhieuXuat px ON ct.MaPX = px.MaPX
-    WHERE sp.TenSP = @TenSP
-      AND YEAR(px.NgayLap) = @Nam;
-
-    IF @TongSoLuong IS NULL
-        SET @TongSoLuong = 0;
-
-    RETURN @TongSoLuong;
-END
-GO
-
--- 2. Function F2: Tổng số lượng phiếu xuất của nhân viên
-CREATE FUNCTION F2 (@MaNV CHAR(5))
-RETURNS INT
-AS
+	DECLARE @DOANHTHU BIGINT;
+	IF(@MAPHIM IS NULL)
+	RETURN 0;
+	SELECT @DOANHTHU = SUM(SOLUONGVE * GIAVE)
+	FROM LICHCHIEU
+	WHERE MAPHIM = @MAPHIM;
+	RETURN @DOANHTHU
+END;
+PRINT N'DOANH THU PHIM = ' + STR(DBO.F1(NULL),3);
+PRINT N'DOANH THU PHIM = ' + STR(DBO.F1('P03'),10);
+--- CÂU 3:
+CREATE PROC P1 (@MAPHIM VARCHAR(5) = NULL)
+AS 
 BEGIN
-    DECLARE @SoLuongPhieu INT;
+	IF @MAPHIM IS NULL
+	BEGIN 
+		SELECT P.MAPHIM,
+		P.TENPHIM,
+		DBO.F1(P.MAPHIM) AS TONGDT
+		FROM PHIM P
+	END
+	ELSE 
+	BEGIN
+	SELECT P.MAPHIM,
+	P.TENPHIM,
+	DBO.F1(P.MAPHIM) AS TONGDT
+	FROM PHIM P
+	WHERE P.MAPHIM = @MAPHIM;
+	END
+END.3
 
-    IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE MaNV = @MaNV)
-        SET @SoLuongPhieu = 0;
-    ELSE
-        SELECT @SoLuongPhieu = COUNT(MaPX)
-        FROM PhieuXuat
-        WHERE MaNV = @MaNV;
 
-    RETURN @SoLuongPhieu;
-END
-GO
-
--- 3. Function F3: Danh sách các sản phẩm được xuất trong năm
-CREATE FUNCTION F3 (@Nam INT)
+EXEC P1 NULL;
+EXEC P1 'P02';
+--- CÂU 4:
+CREATE FUNCTION F2 (@THANG INT, @NAM INT)
 RETURNS TABLE
 AS
-RETURN
-(
-    SELECT DISTINCT
-        sp.MaSP,
-        sp.TenSP,
-        l.TenLoai
-    FROM SanPham sp
-    JOIN CTPX ct ON sp.MaSP = ct.MaSP
-    JOIN PhieuXuat px ON ct.MaPX = px.MaPX
-    JOIN Loai l ON sp.MaLoai = l.MaLoai
-    WHERE YEAR(px.NgayLap) = @Nam
+RETURN (
+	SELECT MARAP, MAPHIM,NGAYCHIEU,SOLUONGVE
+	FROM LICHCHIEU
+	WHERE MONTH(NGAYCHIEU) = @THANG
+	AND YEAR(NGAYCHIEU) = @NAM
 );
-GO
-
--- 4. Function F4: Danh sách các phiếu xuất của nhân viên
-CREATE FUNCTION F4 (@MaNV CHAR(5))
-RETURNS TABLE
-AS
-RETURN
-(
-    SELECT
-        MaPX,
-        NgayLap,
-        MaNV
-    FROM PhieuXuat
-    WHERE MaNV = @MaNV OR @MaNV IS NULL OR @MaNV = ''
-);
-GO
-
--- 5. Function F5: Chi tiết xuất của một phiếu xuất
-CREATE FUNCTION F5 (@MaPX CHAR(6))
-RETURNS TABLE
-AS
-RETURN
-(
-    SELECT
-        ct.MaSP,
-        sp.TenSP,
-        ct.SoLuong
-    FROM CTPX ct
-    JOIN SanPham sp ON ct.MaSP = sp.MaSP
-    WHERE ct.MaPX = @MaPX
-);
-GO
-
--- 6. Function F6: Danh sách các phiếu xuất từ ngày T1 đến T2
-CREATE FUNCTION F6 (@T1 DATE, @T2 DATE)
-RETURNS TABLE
-AS
-RETURN
-(
-    SELECT
-        MaPX,
-        NgayLap,
-        MaNV
-    FROM PhieuXuat
-    WHERE NgayLap BETWEEN @T1 AND @T2
-);
-GO
-
--- 7. Function F7: Chi tiết phiếu xuất với một mã phiếu xuất (Giống F5)
-CREATE FUNCTION F7 (@MaPX CHAR(6))
-RETURNS TABLE
-AS
-RETURN
-(
-    SELECT
-        ct.MaSP,
-        sp.TenSP,
-        ct.SoLuong
-    FROM CTPX ct
-    JOIN SanPham sp ON ct.MaSP = sp.MaSP
-    WHERE ct.MaPX = @MaPX
-);
-GO
-
-
-/*
-------------------------------------------------------------
---                  TẠO CÁC PROCEDURE
-------------------------------------------------------------
-*/
-
--- 1. Procedure P1: Tổng số lượng xuất kho của sản phẩm trong năm 2010 (Sử dụng Function F1)
-CREATE PROCEDURE P1
-    @TenSP NVARCHAR(100),
-    @TongSoLuong INT OUTPUT
+SELECT * FROM DBO.F2(4,2024)
+--- CÂU 5:
+CREATE TRIGGER T1 ON LICHCHIEU
+AFTER INSERT, DELETE, UPDATE
 AS
 BEGIN
-    SELECT @TongSoLuong = dbo.F1(@TenSP, 2010);
+	UPDATE PHIM
+	SET SOLANCHIEU = (
+	SELECT COUNT(*)
+	FROM LICHCHIEU
+	WHERE LICHCHIEU.MAPHIM = PHIM.MAPHIM
+	);
 END
-GO
+--XEM LẠI BẢNG LICHCHIEU TRƯỚC KHI TEST
+SELECT MAPHIM, TENPHIM,SOLANCHIEU
+FROM PHIM
+WHERE MAPHIM = 'P01'
+--TEST LẦN 1 SOLANCHIEU TĂNG LÊN 1
+INSERT INTO LICHCHIEU VALUES ('XC99','R01','P01','2024-05-10',150,100000)
+--TEST LẦN 2 SOLANCHIEU GIẢM XUỐNG 1
+DELETE FROM LICHCHIEU
+WHERE MAXC = 'XC99'
+---TEST LẦN 3ĐỔI PHIM TRONG LỊCH CHIẾU
+UPDATE LICHCHIEU
+SET MAPHIM= 'P02'
+WHERE MAPHIM IN ('P01','P02');
+----TEST LẦN 4 XEM TÔNG QUÁT
+SELECT MAPHIM,TENPHIM,SOLANCHIEU
+FROM PHIM
 
--- 2. Procedure P2: Tổng số lượng xuất kho của sản phẩm từ 4/2010 đến 6/2010
-CREATE PROCEDURE P2
-    @TenSP NVARCHAR(100),
-    @TongSoLuong INT OUTPUT
-AS
-BEGIN
-    SELECT @TongSoLuong = SUM(ct.SoLuong)
-    FROM SanPham sp
-    JOIN CTPX ct ON sp.MaSP = ct.MaSP
-    JOIN PhieuXuat px ON ct.MaPX = px.MaPX
-    WHERE sp.TenSP = @TenSP
-      AND px.NgayLap BETWEEN '2010-04-01' AND '2010-06-30';
-
-    IF @TongSoLuong IS NULL
-    BEGIN
-        SET @TongSoLuong = 0;
-    END
-END
-GO
-
--- 3. Procedure P3: Số lượng xuất kho của sản phẩm từ 4/2010 đến 6/2010 (GỌI Procedure P2)
-CREATE PROCEDURE P3
-    @TenSP NVARCHAR(100)
-AS
-BEGIN
-    DECLARE @SoLuongXuat INT;
-
-    EXEC P2 @TenSP = @TenSP, @TongSoLuong = @SoLuongXuat OUTPUT;
-
-    SELECT
-        @TenSP AS TenSanPham,
-        N'4/2010 đến 6/2010' AS KhoangThoiGian,
-        @SoLuongXuat AS TongSoLuongXuat;
-END
-GO
-
--- 4. Procedure P4: INSERT record vào bảng Loai
-CREATE PROCEDURE P4
-    @MaLoai CHAR(5),
-    @TenLoai NVARCHAR(50)
-AS
-BEGIN
-    IF EXISTS (SELECT 1 FROM Loai WHERE MaLoai = @MaLoai)
-    BEGIN
-        RAISERROR(N'Mã loại đã tồn tại. Không thể thêm.', 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO Loai (MaLoai, TenLoai)
-    VALUES (@MaLoai, @TenLoai);
-
-    SELECT N'Thêm loại sản phẩm thành công!' AS ThongBao;
-END
-GO
-
--- 5. Procedure P5: DELETE record từ bảng NhanVien
-CREATE PROCEDURE P5
-    @MaNV CHAR(5)
-AS
-BEGIN
-    IF EXISTS (SELECT 1 FROM PhieuXuat WHERE MaNV = @MaNV)
-    BEGIN
-        RAISERROR(N'Không thể xóa nhân viên này vì có phiếu xuất liên quan.', 16, 1);
-        RETURN;
-    END
-
-    IF NOT EXISTS (SELECT 1 FROM NhanVien WHERE MaNV = @MaNV)
-    BEGIN
-        RAISERROR(N'Mã nhân viên không tồn tại.', 16, 1);
-        RETURN;
-    END
-
-    DELETE FROM NhanVien
-    WHERE MaNV = @MaNV;
-
-    SELECT N'Xóa nhân viên thành công!' AS ThongBao;
-END
-GO------------------------------------------------------------
--- 1. Trigger T1: Giới hạn số phiếu xuất (Tối đa 5 phiếu/ngày/NV)
-------------------------------------------------------------
-CREATE TRIGGER T1_KiemTraSoPhieuXuat
-ON PhieuXuat
-FOR INSERT
-AS
-BEGIN
-    DECLARE @MaNV CHAR(5);
-    DECLARE @NgayLap DATE;
-    DECLARE @SoPhieuDaLap INT;
-    
-    -- Lấy thông tin từ phiếu vừa được INSERT
-    SELECT @MaNV = MaNV, @NgayLap = NgayLap FROM inserted;
-
-    -- Đếm số lượng phiếu xuất đã lập của nhân viên đó trong cùng ngày (bao gồm cả phiếu vừa INSERT)
-    SELECT @SoPhieuDaLap = COUNT(MaPX)
-    FROM PhieuXuat
-    WHERE MaNV = @MaNV 
-      AND NgayLap = @NgayLap;
-
-    -- Nếu số lượng lớn hơn 5, HỦY thao tác INSERT
-    IF @SoPhieuDaLap > 5
-    BEGIN
-        RAISERROR(N'Lỗi: Mỗi nhân viên chỉ được lập tối đa 5 phiếu xuất trong một ngày.', 16, 1);
-        ROLLBACK TRANSACTION;
-    END
-END
-GO
-
- ------------------------------------------------------------
--- 2. Trigger T2: Giới hạn số chi tiết phiếu xuất (Tối đa 10 chi tiết/phiếu)
-------------------------------------------------------------
-CREATE TRIGGER T2_KiemTraSoCTPX
-ON CTPX
-FOR INSERT
-AS
-BEGIN
-    DECLARE @MaPX CHAR(6);
-    DECLARE @SoChiTiet INT;
-
-    -- Lấy MaPX của chi tiết vừa được INSERT
-    SELECT @MaPX = MaPX FROM inserted;
-
-    -- Đếm số chi tiết hiện có của phiếu đó (bao gồm cả chi tiết vừa INSERT)
-    SELECT @SoChiTiet = COUNT(MaSP)
-    FROM CTPX
-    WHERE MaPX = @MaPX;
-
-    -- Nếu số lượng lớn hơn 10, HỦY thao tác INSERT
-    IF @SoChiTiet > 10
-    BEGIN
-        RAISERROR(N'Lỗi: Mỗi phiếu xuất chỉ được có tối đa 10 chi tiết (dòng sản phẩm) khác nhau.', 16, 1);
-        ROLLBACK TRANSACTION;
-    END
-END
-GO------------------------------------------------------------
--- 3. Trigger T3: Kiểm tra Mã PX có tồn tại trong CTPX
-------------------------------------------------------------
-CREATE TRIGGER T3_KiemTraMaPX_CTPX
-ON CTPX
-FOR INSERT
-AS
-BEGIN
-    -- Kiểm tra xem có bất kỳ MaPX nào trong bảng 'inserted' (dữ liệu mới) 
-    -- mà KHÔNG tồn tại trong bảng 'PhieuXuat'
-    IF EXISTS (
-        SELECT i.MaPX
-        FROM inserted i
-        LEFT JOIN PhieuXuat px ON i.MaPX = px.MaPX
-        WHERE px.MaPX IS NULL
-    )
-    BEGIN
-        RAISERROR(N'Lỗi: Mã phiếu xuất trong chi tiết phiếu xuất không tồn tại trong bảng PhieuXuat.', 16, 1);
-        ROLLBACK TRANSACTION;
-    END
-END
-GO
-
-
-
-
+GPT
